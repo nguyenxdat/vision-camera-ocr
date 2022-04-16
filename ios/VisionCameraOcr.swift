@@ -112,7 +112,7 @@ public class OCRFrameProcessorPlugin: NSObject, FrameProcessorPluginBase {
           print("Failed to get image buffer from sample buffer.")
           return nil
         }
-
+    
         let visionImage = VisionImage(buffer: frame.buffer)
         
         // TODO: Get camera orientation state
