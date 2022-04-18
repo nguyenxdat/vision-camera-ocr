@@ -122,6 +122,7 @@ public class OCRFrameProcessorPlugin: NSObject, FrameProcessorPluginBase {
         do {
           result = try TextRecognizer.textRecognizer()
             .results(in: visionImage)
+            print("--result.text = \(result.text) --")
         } catch let error {
           print("Failed to recognize text with error: \(error.localizedDescription).")
           return nil
@@ -134,4 +135,5 @@ public class OCRFrameProcessorPlugin: NSObject, FrameProcessorPluginBase {
             ]
         ]
     }
+    
 }
