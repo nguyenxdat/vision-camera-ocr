@@ -6594,10 +6594,10 @@
     "setimmediate" "^1.0.5"
     "string-hash-64" "^1.0.3"
 
-"react-native-vision-camera@^2.13.2":
-  "integrity" "sha512-qlyEef7tzwBwiCOOundVPYH4W70I/Wc787uagW8I0guSKa+qQsl1qtPkKzEuT829RAkPr3DrsOUzvasBOUhi3w=="
-  "resolved" "git+ssh://git@github.com/nguyenxdat/react-native-vision-camera.git#b6e61a694c9f2152f270984c5ad2dd670610201e"
-  "version" "2.13.2"
+"react-native-vision-camera@^2.13.1":
+  "integrity" "sha512-QG0sfmMKHEiunHfr2kZlBFxxcatu84uKyYr2PFNnDxpsIeL3r6JvzFJG6FODgNGYlq9Zq/W9H0BFbJco85EHsg=="
+  "resolved" "https://registry.npmjs.org/react-native-vision-camera/-/react-native-vision-camera-2.13.1.tgz"
+  "version" "2.13.1"
 
 "react-native@*", "react-native@>=0.64.0-rc.0 || 0.0.0-*", "react-native@0.64.2":
   "integrity" "sha512-Ty/fFHld9DcYsFZujXYdeVjEhvSeQcwuTGXezyoOkxfiGEGrpL/uwUZvMzwShnU4zbbTKDu2PAm/uwuOittRGA=="
