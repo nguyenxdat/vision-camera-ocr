@@ -104,8 +104,8 @@ public class OCRFrameProcessorPlugin: NSObject, FrameProcessorPluginBase {
     }
     
     @objc
-    public static func callback(_ frame: Frame!, withArgs _: [Any]!) -> Any! {
-        
+    public static func callback(_ frame: Frame!, withArgs args: [Any]!) -> Any! {
+        print("args = \(args)");
         guard (CMSampleBufferGetImageBuffer(frame.buffer) != nil) else {
           print("Failed to get image buffer from sample buffer.")
           return nil
