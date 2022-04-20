@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 import type { Frame } from 'react-native-vision-camera';
 
-type BoundingFrame = {
+export type BoundingFrame = {
   x: number;
   y: number;
   width: number;
@@ -9,15 +9,15 @@ type BoundingFrame = {
   boundingCenterX: number;
   boundingCenterY: number;
 };
-type Point = { x: number; y: number };
+export type Point = { x: number; y: number };
 
-type TextElement = {
+export type TextElement = {
   text: string;
   frame: BoundingFrame;
   cornerPoints: Point[];
 };
 
-type TextLine = {
+export type TextLine = {
   text: string;
   elements: TextElement[];
   frame: BoundingFrame;
@@ -25,7 +25,7 @@ type TextLine = {
   cornerPoints: Point[];
 };
 
-type TextBlock = {
+export type TextBlock = {
   text: string;
   lines: TextLine[];
   frame: BoundingFrame;
@@ -33,7 +33,7 @@ type TextBlock = {
   cornerPoints: Point[];
 };
 
-type Text = {
+export type Text = {
   text: string;
   blocks: TextBlock[];
 };
@@ -42,12 +42,17 @@ export type OCRFrame = {
   result: Text;
 };
 
+export interface PreviewSize {
+  widht?: number;
+  height?: number;
+}
+
 /**
  * Scans OCR.
  */
 
-export function scanOCR(frame: Frame): OCRFrame {
+export function scanOCR(frame: Frame, previewSize: PreviewSize): OCRFrame {
   'worklet';
   // @ts-ignore
-  return __scanOCR(frame);
+  return __scanOCR(frame, previewSize);
 }
