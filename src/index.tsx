@@ -43,7 +43,12 @@ export type OCRFrame = {
 };
 
 export interface PreviewSize {
-  widht?: number;
+  width?: number;
+  height?: number;
+}
+
+export interface CaptureSize {
+  width?: number;
   height?: number;
 }
 
@@ -51,8 +56,8 @@ export interface PreviewSize {
  * Scans OCR.
  */
 
-export function scanOCR(frame: Frame, previewSize: PreviewSize): OCRFrame {
+export function scanOCR(frame: Frame, previewSize: PreviewSize, captureSize: CaptureSize): OCRFrame {
   'worklet';
   // @ts-ignore
-  return __scanOCR(frame, previewSize);
+  return __scanOCR(frame, previewSize, captureSize);
 }

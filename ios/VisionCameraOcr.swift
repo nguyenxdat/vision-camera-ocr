@@ -89,35 +89,68 @@ public class OCRFrameProcessorPlugin: NSObject, FrameProcessorPluginBase {
         
         let offsetX = (frameRect.midX - ceil(frameRect.width)) / 2.0
         let offsetY = (frameRect.midY - ceil(frameRect.height)) / 2.0
-
+        
         let x = frameRect.maxX + offsetX
         let y = frameRect.minY + offsetY
-
+        
         return [
-          "x": frameRect.midX + (frameRect.midX - x),
-          "y": frameRect.midY + (y - frameRect.midY),
-          "width": frameRect.width,
-          "height": frameRect.height,
-          "boundingCenterX": frameRect.midX,
-          "boundingCenterY": frameRect.midY
+            "x": frameRect.midX + (frameRect.midX - x),
+            "y": frameRect.midY + (y - frameRect.midY),
+            "width": frameRect.width,
+            "height": frameRect.height,
+            "boundingCenterX": frameRect.midX,
+            "boundingCenterY": frameRect.midY
         ]
     }
     
     @objc
     public static func callback(_ frame: Frame!, withArgs args: [Any]!) -> Any! {
-        print("args = \(args)");
         guard (CMSampleBufferGetImageBuffer(frame.buffer) != nil) else {
-          print("Failed to get image buffer from sample buffer.")
-          return nil
+            print("Failed to get image buffer from sample buffer.")
+            return nil
         }
         
         if let imageBuffer = CMSampleBufferGetImageBuffer(frame.buffer) {
             let ciimage = CIImage(cvPixelBuffer: imageBuffer)
-            let image = self.convert(cmage: ciimage, orientation: frame.orientation)
+            var image = self.convert(cmage: ciimage, orientation: .up)
+            print("image.size = \(image.size)")
+            if let previewSize = args[0] as? [String: Any] {
+                let previewWidth = previewSize["width"] as! NSNumber
+                let previewHeight = previewSize["height"] as! NSNumber
+                let cropRect = CGRect(x: 0, y: 0, width: image.size.width, height: image.size.height)
+                let croppedSize = AVMakeRect(aspectRatio: CGSize(width: previewWidth.doubleValue, height: previewHeight.doubleValue), insideRect: cropRect)
+                let takenCGImage = image.cgImage
+                let cropCGImage = takenCGImage?.cropping(to: croppedSize)
+                guard let cropCGImage = cropCGImage else {
+                  return nil
+                }
+                image = UIImage(cgImage: cropCGImage, scale: image.scale, orientation: image.imageOrientation)
+                var width = CGFloat(truncating: previewWidth)
+                width /= UIScreen.main.scale
+                let scaleRatio = width / CGFloat(image.size.width)
+                let size = CGSize(width: width, height: CGFloat(roundf(Float(image.size.height * scaleRatio))))
+                UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
+                image.draw(in: CGRect(x: 0, y: 0, width: size.width, height: size.height))
+                let newImage = UIGraphicsGetImageFromCurrentImageContext()
+                UIGraphicsEndImageContext()
+                guard let newImage = newImage else {
+                  return nil
+                }
+                image = UIImage(cgImage: newImage.cgImage!, scale: 1.0, orientation: newImage.imageOrientation)
+//                print("previewSize \(previewSize)")
+//                let scale = previewWidth.doubleValue / previewHeight.doubleValue
+//                let widthImage = image.size.width
+//                let heightImage = widthImage / scale
+//                let size = CGSize(width: widthImage, height: heightImage)
+//                let rect = caculateCropImageRect(originImageSize: image.size, cropImageSize: size)
+//                image = cropImage(image: image, rect: rect)
+                print("size when crop \(image.size)")
+            }
             let visionImage = VisionImage(image: image)
             do {
                 let result = try TextRecognizer.textRecognizer(options: TextRecognizerOptions())
-                  .results(in: visionImage)
+                    .results(in: visionImage)
+                print("result = \(result.text)")
                 return [
                     "result": [
                         "text": result.text,
@@ -125,7 +158,7 @@ public class OCRFrameProcessorPlugin: NSObject, FrameProcessorPluginBase {
                     ]
                 ]
             } catch let error {
-              print("Failed to recognize text with error: \(error.localizedDescription).")
+                print("Failed to recognize text with error: \(error.localizedDescription).")
                 return nil
             }
         } else {
@@ -135,10 +168,28 @@ public class OCRFrameProcessorPlugin: NSObject, FrameProcessorPluginBase {
     }
     
     private static func convert(cmage: CIImage, orientation: UIImage.Orientation) -> UIImage {
-            let context = CIContext(options: nil)
-            let cgImage = context.createCGImage(cmage, from: cmage.extent)!
+        let context = CIContext(options: nil)
+        let cgImage = context.createCGImage(cmage, from: cmage.extent)!
         let image = UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
-            return image
+        return image
     }
+    
+    private static func caculateCropImageRect(originImageSize: CGSize, cropImageSize: CGSize) -> CGRect {
+        let orgiginYImage = (originImageSize.width - cropImageSize.width) / 2
+        let originXImage = originImageSize.height / 2 - cropImageSize.height / 2
+        let rect: CGRect = CGRect(x: originXImage, y: orgiginYImage, width: cropImageSize.height, height: cropImageSize.width).integral
+        
+        return rect
+    }
+    
+    private static func cropImage(image: UIImage, rect: CGRect) -> UIImage {
+        let cgimage = image.cgImage!
+        
+        let imageRef: CGImage = cgimage.cropping(to: rect)!
+        let resultImage: UIImage = UIImage(cgImage: imageRef, scale: image.scale, orientation: image.imageOrientation)
+        
+        return resultImage
+    }
+    
     
 }
