@@ -122,6 +122,6 @@
     ]
   },
   "dependencies": {
-    "react-native-vision-camera": "github:nguyenxdat/react-native-vision-camera#d9e569adb45f0e97d9bc52ec8046a89619404253"
+    "react-native-vision-camera": "^2.13.1"
   }
 }
