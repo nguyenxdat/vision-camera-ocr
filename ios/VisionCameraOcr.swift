@@ -115,63 +115,33 @@ public class OCRFrameProcessorPlugin: NSObject, FrameProcessorPluginBase {
         
         if let imageBuffer = CMSampleBufferGetImageBuffer(frame.buffer) {
             let ciimage = CIImage(cvPixelBuffer: imageBuffer)
-            var image = self.convert(cmage: ciimage, orientation: .up)
+            let image = self.convert(cmage: ciimage, orientation: .up)
+            var croppedImage = image
             var previewImageRect = CGRect.zero
-            print("image.size = \(image.size)")
             if let previewSize = args[0] as? [String: Any] {
                 let previewWidth = previewSize["width"] as! NSNumber
                 let previewHeight = previewSize["height"] as! NSNumber
-                print("previewSize = \(previewSize)")
                 let captureWidth = captureSize["width"] as! NSNumber
                 let captureHeight = captureSize["height"] as! NSNumber
-                print("captureSize = \(captureSize)")
                 let scaleWidth = captureWidth.doubleValue / previewWidth.doubleValue
                 let widthImage = image.size.width * scaleWidth
                 let aspecRatioCaptureView = captureHeight.doubleValue / captureWidth.doubleValue
                 let heightImage = widthImage * aspecRatioCaptureView
-                previewImageRect: CGRect = caculateCropImageRect(originImageSize: image.size, cropImageSize: CGSize(width: widthImage, height: heightImage))
-                print("previewImageRect = \(previewImageRect)")
-                image = cropImage(image: image, rect: previewImageRect)
-//                let cropRect = CGRect(x: 0, y: 0, width: image.size.width, height: image.size.height)
-//                let croppedSize = AVMakeRect(aspectRatio: CGSize(width: previewWidth.doubleValue, height: previewHeight.doubleValue), insideRect: cropRect)
-//                let takenCGImage = image.cgImage
-//                let cropCGImage = takenCGImage?.cropping(to: croppedSize)
-//                guard let cropCGImage = cropCGImage else {
-//                  return nil
-//                }
-//                image = UIImage(cgImage: cropCGImage, scale: image.scale, orientation: image.imageOrientation)
-//                var width = CGFloat(truncating: previewWidth)
-//                width /= UIScreen.main.scale
-//                let scaleRatio = width / CGFloat(image.size.width)
-//                let size = CGSize(width: width, height: CGFloat(roundf(Float(image.size.height * scaleRatio))))
-//                UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
-//                image.draw(in: CGRect(x: 0, y: 0, width: size.width, height: size.height))
-//                let newImage = UIGraphicsGetImageFromCurrentImageContext()
-//                UIGraphicsEndImageContext()
-//                guard let newImage = newImage else {
-//                  return nil
-//                }
-//                image = UIImage(cgImage: newImage.cgImage!, scale: 1.0, orientation: newImage.imageOrientation)
-////                print("previewSize \(previewSize)")
-////                let scale = previewWidth.doubleValue / previewHeight.doubleValue
-////                let widthImage = image.size.width
-////                let heightImage = widthImage / scale
-////                let size = CGSize(width: widthImage, height: heightImage)
-////                let rect = caculateCropImageRect(originImageSize: image.size, cropImageSize: size)
-////                image = cropImage(image: image, rect: rect)
-                print("size when crop \(image.size)")
+                previewImageRect = caculateCropImageRect(originImageSize: image.size, cropImageSize: CGSize(width: widthImage, height: heightImage))
+                croppedImage = cropImage(image: image, rect: previewImageRect)
             }
-            let visionImage = VisionImage(image: image)
+            let visionImage = VisionImage(image: croppedImage)
             do {
                 let result = try TextRecognizer.textRecognizer(options: TextRecognizerOptions())
                     .results(in: visionImage)
-                print("result = \(result.text)")
                 return [
                     "result": [
                         "text": result.text,
                         "blocks": getBlockArray(result.blocks),
                         "xAxis": previewImageRect.origin.x,
                         "yAxis": previewImageRect.origin.y,
+                        "frameWidth": image.size.width,
+                        "frameHeight": image.size.height,
                     ]
                 ]
             } catch let error {

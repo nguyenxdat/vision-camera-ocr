@@ -38,6 +38,8 @@ export type Text = {
   blocks: TextBlock[];
   xAxis: number;
   yAxis: number;
+  frameWidth: number;
+  frameHeight: number;
 };
 
 export type OCRFrame = {
