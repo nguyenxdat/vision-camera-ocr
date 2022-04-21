@@ -36,6 +36,8 @@ export type TextBlock = {
 export type Text = {
   text: string;
   blocks: TextBlock[];
+  xAxis: number;
+  yAxis: number;
 };
 
 export type OCRFrame = {
