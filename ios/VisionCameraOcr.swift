@@ -115,12 +115,19 @@ public class OCRFrameProcessorPlugin: NSObject, FrameProcessorPluginBase {
         
         if let imageBuffer = CMSampleBufferGetImageBuffer(frame.buffer) {
             let ciimage = CIImage(cvPixelBuffer: imageBuffer)
-            let image = self.convert(cmage: ciimage, orientation: .up)
+            var image = self.convert(cmage: ciimage, orientation: .up)
             var croppedImage = image
             var previewImageRect = CGRect.zero
             if let previewSize = args[0] as? [String: Any] {
                 let previewWidth = previewSize["width"] as! NSNumber
                 let previewHeight = previewSize["height"] as! NSNumber
+                let croppedSize = AVMakeRect(aspectRatio: CGSize(width: previewWidth.doubleValue, height: previewHeight.doubleValue), insideRect: CGRect(x: 0, y: 0, width: image.size.width, height: image.size.height))
+                let takenCGImage = image.cgImage
+                let cropCGImage = takenCGImage?.cropping(to: croppedSize)
+                guard let cropCGImage = cropCGImage else {
+                  return nil
+                }
+                image = UIImage(cgImage: cropCGImage, scale: image.scale, orientation: image.imageOrientation)
                 let captureWidth = captureSize["width"] as! NSNumber
                 let captureHeight = captureSize["height"] as! NSNumber
                 let scaleWidth = captureWidth.doubleValue / previewWidth.doubleValue
