@@ -1,21 +1,26 @@
 package com.visioncameraocr
 
 import android.annotation.SuppressLint
-import android.graphics.Point
-import android.graphics.Rect
+import android.content.res.Resources.getSystem
+import android.graphics.*
 import android.media.Image
+import android.util.Log
 import androidx.camera.core.ImageProxy
+import com.facebook.react.bridge.ReadableNativeMap
 import com.facebook.react.bridge.WritableNativeArray
 import com.facebook.react.bridge.WritableNativeMap
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.common.internal.ImageConvertUtils
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.mrousavy.camera.frameprocessor.FrameProcessorPlugin
+import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
 
-class OCRFrameProcessorPlugin: FrameProcessorPlugin("scanOCR") {
+class OCRFrameProcessorPlugin : FrameProcessorPlugin("scanOCR") {
 
     private fun getBlockArray(blocks: MutableList<Text.TextBlock>): WritableNativeArray {
         val blockArray = WritableNativeArray()
@@ -24,7 +29,10 @@ class OCRFrameProcessorPlugin: FrameProcessorPlugin("scanOCR") {
             val blockMap = WritableNativeMap()
 
             blockMap.putString("text", block.text)
-            blockMap.putArray("recognizedLanguages", getRecognizedLanguages(block.recognizedLanguage))
+            blockMap.putArray(
+                "recognizedLanguages",
+                getRecognizedLanguages(block.recognizedLanguage)
+            )
             blockMap.putArray("cornerPoints", block.cornerPoints?.let { getCornerPoints(it) })
             blockMap.putMap("frame", getFrame(block.boundingBox))
             blockMap.putArray("lines", getLineArray(block.lines))
@@ -99,19 +107,45 @@ class OCRFrameProcessorPlugin: FrameProcessorPlugin("scanOCR") {
     override fun callback(frame: ImageProxy, params: Array<Any>): Any? {
 
         val result = WritableNativeMap()
-
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
         @SuppressLint("UnsafeOptInUsageError")
-        val mediaImage: Image? = frame.getImage()
+        val mediaImage: Image? = frame.image
 
         if (mediaImage != null) {
-            val image = InputImage.fromMediaImage(mediaImage, frame.imageInfo.rotationDegrees)
+            val inputImage = InputImage.fromMediaImage(mediaImage, frame.imageInfo.rotationDegrees)
+            var bitmap = ImageConvertUtils.getInstance().getUpRightBitmap(inputImage)
+
+            val realBitmapWidth = bitmap.width
+            val realBitmapHeight = bitmap.height
+            val previewSize = params[0] as ReadableNativeMap
+            val captureSize = params[1] as ReadableNativeMap
+            val previewWidth = previewSize.getDouble("width")
+            val previewHeight = previewSize.getDouble("height")
+            val captureWidth = captureSize.getDouble("width")
+            val captureHeight = captureSize.getDouble("height")
+
+            val scaleWidth = captureWidth / previewWidth
+            val widthImage = bitmap.width * scaleWidth
+            val aspecRatioCaptureView = captureHeight / captureWidth
+            val heightImage = widthImage * aspecRatioCaptureView
+            val originXImage = (bitmap.width - widthImage) / 2
+            val originYImage = (bitmap.height - heightImage) / 2
+            /// rect = CGRect (x: originXImage, y: originYImage, width: widthImage, height: heightImage)
+
+            // capture bitmap
+            bitmap = Bitmap.createBitmap(bitmap, originXImage.toInt(), originYImage.toInt(), widthImage.toInt(), heightImage.toInt())
+
+            val image = InputImage.fromBitmap(bitmap, 0) /// Because before real rotate
             val task: Task<Text> = recognizer.process(image)
             try {
                 val text: Text = Tasks.await<Text>(task)
                 result.putString("text", text.text)
                 result.putArray("blocks", getBlockArray(text.textBlocks))
+                result.putDouble("xAxis", originXImage)
+                result.putDouble("yAxis", originYImage)
+                result.putDouble("frameWidth", realBitmapWidth.toDouble())
+                result.putDouble("frameHeight", realBitmapHeight.toDouble())
             } catch (e: Exception) {
                 return null
             }
@@ -121,4 +155,6 @@ class OCRFrameProcessorPlugin: FrameProcessorPlugin("scanOCR") {
         data.putMap("result", result)
         return data
     }
+
 }
+
